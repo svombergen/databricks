@@ -19,22 +19,38 @@ with open('reponse_file_req', "w") as f:
 
 df = pd.read_csv('reponse_file_req', error_bad_lines=False, sep=';')
 
+x = [['Euronext Growth Paris','ALXP'],['Euronext Paris','XPAR']
+  ,['Euronext Access Paris', 'XMLI']
+  ,['Euronext Access Brussels', 'XBRU']
+  ,['Euronext Access Lisbon', 'ALXL']
+  ,['Euronext Amsterdam', 'XAMS']
+  ,['Euronext Growth Brussels', 'ALXB']
+  ,['Euronext Growth Lisbon', 'EXNL']
+  ,['Euronext Lisbon', 'XLIS']
+  ,['Traded not listed Brussels', 'TNLB']]
+df_ref = pd.DataFrame(x,columns= ['Market2','code'])
+df_ref.set_index('Market2',inplace=True)
+
+df['Market2'] = df['Market'].str.split(',').str[0]
+df.set_index('Market2',inplace=True)
+
+df.join(df_ref).head(20)
+
+
+
+# COMMAND ----------
+
+zip(x['ISIN'],x['code'])[:10]
+
+# COMMAND ----------
+
 
 # https://realpython.com/headless-selenium-testing-with-python-and-phantomjs/
-for isin in df['ISIN']:
+for isin, code in zip(x['ISIN'],x['code'])[:10]:
     # https://www.euronext.com/en/products/equities/FR0010285965-ALXP/quotes
     # https://www.euronext.com/nyx_eu_listings/price_chart/download_historical?typefile=csv&layout=vertical&typedate=dmy&separator=point&mic=ALXP&isin=FR0010285965&name=1000MERCIS&namefile=Price_Data_Historical_1000MERCIS&from=656812800000&to=1541030400000&adjusted=1&base=0
-    Euronext Growth Paris = ALXP
-    Euronext Paris = XPAR
-    Euronext Access Paris = XMLI
-    Euronext Access Brussels = XBRU
-    Euronext Access Lisbon = ALXL
-    Euronext Amsterdam = XAMS
-    Euronext Growth Brussels = ALXB
-    Euronext Growth Lisbon = EXNL
-    Euronext Lisbon = XLIS
-    Traded not listed Brussels = TNLB
-    print(isin)
+    url_hist = 'https://www.euronext.com/nyx_eu_listings/price_chart/download_historical?typefile=csv&layout=vertical&typedate=dmy&separator=point&mic='+code+'&isin='+isin+'&name='+isin+'&namefile=Price_Data_Historical_'+isin+'&from=656812800000&to=1541030400000&adjusted=1&base=0'
+    print(url_hist)
 
 # COMMAND ----------
 
