@@ -34,26 +34,46 @@ df_ref.set_index('Market2',inplace=True)
 df['Market2'] = df['Market'].str.split(',').str[0]
 df.set_index('Market2',inplace=True)
 
-df.join(df_ref).head(20)
-
-
 
 # COMMAND ----------
 
-zip(x['ISIN'],x['code'])[:10]
+df_joined = df.join(df_ref)
+zip(df_joined['ISIN'],df_joined['code'])[:10]
 
 # COMMAND ----------
 
+from requests.adapters import HTTPAdapter
 
+s = requests.Session()
+s.mount('http', HTTPAdapter(max_retries=3))
+s.mount('https', HTTPAdapter(max_retries=3))
+
+# COMMAND ----------
+
+import time
+
+df_final = pd.DataFrame()
 # https://realpython.com/headless-selenium-testing-with-python-and-phantomjs/
-for isin, code in zip(x['ISIN'],x['code'])[:10]:
+for isin, code in zip(df_joined['ISIN'],df_joined['code'])[:10]:
     # https://www.euronext.com/en/products/equities/FR0010285965-ALXP/quotes
     # https://www.euronext.com/nyx_eu_listings/price_chart/download_historical?typefile=csv&layout=vertical&typedate=dmy&separator=point&mic=ALXP&isin=FR0010285965&name=1000MERCIS&namefile=Price_Data_Historical_1000MERCIS&from=656812800000&to=1541030400000&adjusted=1&base=0
     url_hist = 'https://www.euronext.com/nyx_eu_listings/price_chart/download_historical?typefile=csv&layout=vertical&typedate=dmy&separator=point&mic='+code+'&isin='+isin+'&name='+isin+'&namefile=Price_Data_Historical_'+isin+'&from=656812800000&to=1541030400000&adjusted=1&base=0'
-    print(url_hist)
+    try:
+      r_dl = requests.get(url_hist)
+      open(isin+'.csv', 'wb').write(r_dl.content)
+      df_dl = pd.read_csv(isin+'.csv',skiprows=3)
+#       print(df_dl.head())
+      df_final = df_final.append(df_dl)
+    except:
+      print(url_hist)
+    time.sleep(3)
 
 # COMMAND ----------
 
-df['Market2'] = df['Market'].str.split(',').str[0]
-df.groupby('Market2').head(1).sort_values('Market2')['Market2']
-# df.head(40)
+df_spark = spark.createDataFrame(df_final)
+
+# dbutils.fs.cp('df_final.csv','dbfs:/FileStore/')
+
+# COMMAND ----------
+
+dbutils.fs.put("FileStore/test.tx",'test')
